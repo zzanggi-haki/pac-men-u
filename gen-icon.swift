@@ -1,5 +1,6 @@
-// Renders the open-mouth pacman (same drawing as the menu bar icon) into
-// AppIcon.iconset PNGs. Run via build.sh, then iconutil turns it into .icns.
+// Renders the pixel-art pacman (same 12×12 dot grid as the menu bar icon)
+// as a white sprite on a dark rounded tile, into AppIcon.iconset PNGs.
+// Run via build.sh, then iconutil turns it into .icns.
 import AppKit
 
 func render(_ pixels: Int) -> NSBitmapImageRep {
@@ -11,23 +12,34 @@ func render(_ pixels: Int) -> NSBitmapImageRep {
     NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
 
     let s = CGFloat(pixels)
-    let center = NSPoint(x: s / 2, y: s / 2)
-    let radius = s * 0.425
+
+    // dark rounded tile (macOS icon style)
+    let inset = s * 0.08
+    let tile = NSRect(x: inset, y: inset, width: s - inset * 2, height: s - inset * 2)
+    NSColor(calibratedRed: 0.11, green: 0.11, blue: 0.15, alpha: 1.0).setFill()
+    NSBezierPath(roundedRect: tile, xRadius: s * 0.185, yRadius: s * 0.185).fill()
+
+    // white pixel pacman, mouth open, facing left — same grid as the menu bar icon
+    let grid = 12
+    let art = tile.insetBy(dx: tile.width * 0.16, dy: tile.height * 0.16)
+    let cell = art.width / CGFloat(grid)
+    let c = CGFloat(grid - 1) / 2
     let mouthAngle: CGFloat = 35
-
-    let path = NSBezierPath()
-    path.move(to: center)
-    path.appendArc(withCenter: center, radius: radius,
-                   startAngle: 180 + mouthAngle, endAngle: 180 - mouthAngle,
-                   clockwise: false)
-    path.close()
-    NSColor(calibratedRed: 1.0, green: 0.8, blue: 0.0, alpha: 1.0).setFill()
-    path.fill()
-
-    let eyeD = s * 0.13
-    let eyeRect = NSRect(x: s * 0.375 - eyeD / 2, y: s * 0.65 - eyeD / 2, width: eyeD, height: eyeD)
-    NSColor.black.withAlphaComponent(0.85).setFill()
-    NSBezierPath(ovalIn: eyeRect).fill()
+    NSColor(calibratedWhite: 0.96, alpha: 1.0).setFill()
+    for rowTop in 0..<grid {
+        for col in 0..<grid {
+            let dx = CGFloat(col) - c
+            let dy = c - CGFloat(rowTop)
+            guard sqrt(dx * dx + dy * dy) <= 6.0 else { continue }      // circle body
+            if rowTop == 3 && (col == 3 || col == 4) { continue }       // eye
+            let ang = atan2(dy, dx) * 180 / .pi                         // mouth wedge (left)
+            if abs(180 - abs(ang)) < mouthAngle { continue }
+            let gap = cell * 0.07 // deliberate dot spacing (retro LED look)
+            NSRect(x: art.minX + CGFloat(col) * cell,
+                   y: art.minY + art.height - CGFloat(rowTop + 1) * cell,
+                   width: cell, height: cell).insetBy(dx: gap, dy: gap).fill()
+        }
+    }
 
     NSGraphicsContext.restoreGraphicsState()
     return rep

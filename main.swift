@@ -5,33 +5,33 @@ import ServiceManagement
 // MARK: - Pac-Man icon drawing
 
 enum PacFrame {
-    static func image(mouthAngle: CGFloat, facingLeft: Bool = true, eye: Bool = true) -> NSImage {
-        let size = NSSize(width: 20, height: 20)
-        let img = NSImage(size: size)
+    /// Pixel-art pacman on a 12×12 dot grid, facing left. Rendered as a
+    /// template image so the system tints it like native menu bar icons
+    /// (white on dark menu bars, black on light ones).
+    static func image(mouthAngle: CGFloat) -> NSImage {
+        let grid = 12
+        let pt: CGFloat = 18
+        let cell = pt / CGFloat(grid)
+        let c = CGFloat(grid - 1) / 2
+        let img = NSImage(size: NSSize(width: pt, height: pt))
         img.lockFocus()
-        let center = NSPoint(x: 10, y: 10)
-        let radius: CGFloat = 8.5
-        let path = NSBezierPath()
-        if mouthAngle < 1 {
-            path.appendArc(withCenter: center, radius: radius, startAngle: 0, endAngle: 360)
-        } else {
-            // mouth opens toward the left (eating the icons on the left)
-            let base: CGFloat = facingLeft ? 180 : 0
-            path.move(to: center)
-            path.appendArc(withCenter: center, radius: radius,
-                           startAngle: base + mouthAngle, endAngle: base - mouthAngle,
-                           clockwise: false)
-            path.close()
-        }
-        NSColor(calibratedRed: 1.0, green: 0.8, blue: 0.0, alpha: 1.0).setFill()
-        path.fill()
-        if eye {
-            let eyeRect = NSRect(x: facingLeft ? 7.5 : 10.5, y: 13, width: 2.6, height: 2.6)
-            NSColor.black.withAlphaComponent(0.85).setFill()
-            NSBezierPath(ovalIn: eyeRect).fill()
+        NSColor.black.setFill()
+        for rowTop in 0..<grid {
+            for col in 0..<grid {
+                let dx = CGFloat(col) - c
+                let dy = c - CGFloat(rowTop)
+                guard sqrt(dx * dx + dy * dy) <= 6.0 else { continue }          // circle body
+                if rowTop == 3 && (col == 3 || col == 4) { continue }           // eye
+                if mouthAngle >= 1 {                                            // mouth wedge (left)
+                    let ang = atan2(dy, dx) * 180 / .pi
+                    if abs(180 - abs(ang)) < mouthAngle { continue }
+                }
+                NSRect(x: CGFloat(col) * cell, y: pt - CGFloat(rowTop + 1) * cell,
+                       width: cell, height: cell).fill()
+            }
         }
         img.unlockFocus()
-        img.isTemplate = false
+        img.isTemplate = true
         return img
     }
 
