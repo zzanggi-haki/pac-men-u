@@ -134,6 +134,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var belly: [MenuBarItemRef] = []   // cached at eat time
     var animTimer: Timer?
     var autoEatTimer: Timer?
+    var autoEatActivity: NSObjectProtocol?
     let collapsedLength: CGFloat = 14
     let expandedLength: CGFloat = 10_000
 
@@ -212,7 +213,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func eat() {
         guard !hidden else { return }
-        autoEatTimer?.invalidate()
+        cancelAutoEat()
         hidden = true
         defaults.set(true, forKey: eatenKey)
         animate(frames: PacFrame.chompFrames, final: PacFrame.full)
@@ -240,11 +241,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func scheduleAutoEat() {
-        autoEatTimer?.invalidate()
+        cancelAutoEat()
         guard autoEatSeconds > 0 else { return }
+        // keep App Nap from deferring the timer while the countdown runs
+        autoEatActivity = ProcessInfo.processInfo.beginActivity(
+            options: .userInitiatedAllowingIdleSystemSleep, reason: "auto-eat countdown")
         autoEatTimer = Timer.scheduledTimer(withTimeInterval: TimeInterval(autoEatSeconds),
                                             repeats: false) { [weak self] _ in
             self?.eat()
+        }
+        autoEatTimer?.tolerance = 2
+    }
+
+    func cancelAutoEat() {
+        autoEatTimer?.invalidate()
+        autoEatTimer = nil
+        if let token = autoEatActivity {
+            ProcessInfo.processInfo.endActivity(token)
+            autoEatActivity = nil
         }
     }
 
@@ -360,7 +374,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func autoEatChanged(_ sender: NSMenuItem) {
         autoEatSeconds = sender.tag
         if hidden {
-            autoEatTimer?.invalidate()
+            cancelAutoEat()
         } else {
             scheduleAutoEat() // apply immediately while spat out
         }
