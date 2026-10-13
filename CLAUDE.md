@@ -125,3 +125,13 @@ eat()이 터졌다.
 
 ## 남은 것 (v1.1 후보)
 전역 단축키, 사운드(와카와카), 조는/볼록해지는 애니메이션, 고스트 모드 — 기획서 4-2절.
+
+## 릴리스
+
+```sh
+./scripts/release.sh v1.2.3 --notes-file notes.md
+```
+
+DMG 빌드 → GitHub 릴리스 생성 → [Snackbar](https://github.com/zzanggi-haki/snackbar) 사이트 갱신 신호까지 한 번에 한다.
+릴리스 노트 첫 문단이 사이트 "최근 업데이트"에 요약으로 실린다. 웹에서 직접 릴리스를 만들면
+신호가 안 가니 이 스크립트를 쓴다.
