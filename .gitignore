@@ -2,3 +2,7 @@ PAC-MEN-U.app/
 AppIcon.icns
 AppIcon.iconset/
 .DS_Store
+
+# build_dmg.sh output
+build/
+dist/
